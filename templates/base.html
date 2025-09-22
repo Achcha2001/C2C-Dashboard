@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <title>{% block title %}MMBL — C2C Dashboard{% endblock %}</title>
+
+  <!-- Bootstrap 5.3 CSS -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+    integrity="sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH"
+    crossorigin="anonymous"
+  />
+
+  <!-- Bootstrap Icons -->
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css"
+    rel="stylesheet"
+  />
+
+  <!-- Your app skin (loads AFTER Bootstrap to override it) -->
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/c2c-dashboard.css') }}">
+  {% block head %}{% endblock %}
+
+  <style>
+    /* ===== Theme tokens (fallbacks if not defined in your CSS) ===== */
+    :root{
+      --mmbl-primary:#0b5ed7;       /* MMBL blue */
+      --mmbl-secondary:#00b4d8;     /* MMBL aqua */
+      --mmbl-dark:#0f172a;
+
+      --wu:#ffd21e;                 /* Western Union yellow */
+      --ria:#ff7b22;                /* RIA orange */
+      --mg:#ef4444;                 /* MoneyGram red */
+
+      --sidebar-grad-1: var(--mmbl-primary);
+      --sidebar-grad-2: var(--mmbl-secondary);
+      --sidebar-text:#ffffff;
+      --sidebar-item-bg: rgba(255,255,255,.08);
+      --sidebar-item-hover: rgba(255,255,255,.18);
+      --sidebar-border: rgba(255,255,255,.25);
+    }
+
+    /* ===== Layout chrome ===== */
+    body { background:#f7f9fc; color:var(--mmbl-dark); }
+    .app-shell { min-height:100vh; }
+
+    .brandbar{
+      background:#fff;
+      border-bottom:1px solid #e7ecf3;
+    }
+    .brandbar .navbar-brand{
+      font-weight:800; letter-spacing:.2px;
+    }
+
+    /* ===== Colorful Sidebar (MMBL gradient) ===== */
+    .sidebar{
+      background: linear-gradient(180deg, var(--sidebar-grad-1), var(--sidebar-grad-2));
+      color: var(--sidebar-text);
+      border-right: 0;
+    }
+    .sidebar .section-label{
+      text-transform:uppercase; font-size:.75rem; opacity:.85; letter-spacing:.04em;
+    }
+    .sidebar .nav-link{
+      color: var(--sidebar-text);
+      border-radius:.6rem;
+      padding:.55rem .75rem;
+      margin:.15rem 0;
+      background: var(--sidebar-item-bg);
+      display:flex; align-items:center; gap:.6rem;
+      border:1px solid transparent;
+    }
+    .sidebar .nav-link:hover,
+    .sidebar .nav-link.active{
+      background: var(--sidebar-item-hover);
+      border-color: var(--sidebar-border);
+      color:#fff;
+    }
+
+    /* Brand pills + logos for WU/RIA/MG rows */
+    .brand-pill{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:28px; height:28px; border-radius:999px;
+      background:#fff; color:#000; font-size:.7rem; font-weight:800;
+      border:1px solid rgba(0,0,0,.08);
+      flex:0 0 28px;
+    }
+    .brand-pill.brand-wu{ background: var(--wu); }
+    .brand-pill.brand-ria{ background: var(--ria); color:#fff; }
+    .brand-pill.brand-mg{ background: var(--mg);  color:#fff; }
+    .brand-logo{
+      width:18px; height:18px; object-fit:contain; display:block;
+      filter: drop-shadow(0 0 0 rgba(0,0,0,0));
+    }
+    .brand-fallback{ font-weight:900; font-size:.7rem; line-height:1; }
+
+    /* Mobile offcanvas keeps gradient look */
+    #offcanvasSidebar .offcanvas-body{
+      background: linear-gradient(180deg, var(--sidebar-grad-1), var(--sidebar-grad-2));
+      color:var(--sidebar-text);
+    }
+    #offcanvasSidebar .nav-link{ color:#fff; background: var(--sidebar-item-bg); }
+    #offcanvasSidebar .nav-link:hover{ background: var(--sidebar-item-hover); }
+
+    @media (max-width: 991.98px){
+      .sidebar { border-right:0; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top brand bar -->
+  <nav class="navbar navbar-expand-lg brandbar sticky-top">
+    <div class="container-fluid">
+      <button class="btn btn-outline-secondary d-lg-none me-2" type="button"
+              data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar"
+              aria-controls="offcanvasSidebar" aria-label="Toggle menu">
+        <i class="bi bi-list"></i>
+      </button>
+
+      <a class="navbar-brand" href="{{ url_for('dashboard') }}">
+        MMBL — C2C Dashboard
+      </a>
+
+      <div class="ms-auto d-flex gap-2">
+        <a class="btn btn-outline-primary btn-sm" href="{{ url_for('uploads_brand', brand='wu') }}">
+          <i class="bi bi-upload"></i> Uploads
+        </a>
+        <a class="btn btn-primary btn-sm" href="{{ url_for('analytics') }}">
+          <i class="bi bi-graph-up"></i> Analytics
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="container-fluid app-shell">
+    <div class="row g-0">
+      <!-- Sidebar (desktop) -->
+      <aside class="col-lg-2 col-xl-2 d-none d-lg-block p-3 sidebar">
+        <div class="section-label mb-2">Menu</div>
+        <nav class="nav flex-column">
+          <a class="nav-link {% if active=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+            <i class="bi bi-house-door"></i>
+            <span>Home</span>
+          </a>
+
+          <div class="section-label mt-3 mb-2">Uploads</div>
+          <a class="nav-link brand-wu {% if request.view_args and request.view_args.get('brand')=='wu' %}active{% endif %}"
+             href="{{ url_for('uploads_brand', brand='wu') }}">
+            <span class="brand-pill brand-wu">
+              <img class="brand-logo"
+                   src="{{ url_for('static', filename='logos/wu.svg') }}"
+                   alt="WU"
+                   onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+              <span class="brand-fallback d-none">WU</span>
+            </span>
+            <span>Western Union</span>
+          </a>
+
+          <a class="nav-link brand-ria {% if request.view_args and request.view_args.get('brand')=='ria' %}active{% endif %}"
+             href="{{ url_for('uploads_brand', brand='ria') }}">
+            <span class="brand-pill brand-ria">
+              <img class="brand-logo"
+                   src="{{ url_for('static', filename='logos/ria.svg') }}"
+                   alt="RIA"
+                   onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+              <span class="brand-fallback d-none">RIA</span>
+            </span>
+            <span>RIA</span>
+          </a>
+
+          <a class="nav-link brand-mg {% if request.view_args and request.view_args.get('brand')=='mg' %}active{% endif %}"
+             href="{{ url_for('uploads_brand', brand='mg') }}">
+            <span class="brand-pill brand-mg">
+              <img class="brand-logo"
+                   src="{{ url_for('static', filename='logos/mg.svg') }}"
+                   alt="MG"
+                   onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+              <span class="brand-fallback d-none">MG</span>
+            </span>
+            <span>MoneyGram</span>
+          </a>
+
+          <div class="section-label mt-3 mb-2">Insights</div>
+          <a class="nav-link {% if active=='analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
+            <i class="bi bi-activity"></i>
+            <span>Analytics</span>
+          </a>
+        </nav>
+        <div class="opacity-75 small mt-4">&copy; {{ year }} MMBL</div>
+      </aside>
+
+      <!-- Sidebar (mobile offcanvas) -->
+      <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasSidebar">
+        <div class="offcanvas-header">
+          <h5 class="offcanvas-title">Menu</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+          <nav class="nav flex-column">
+            <a class="nav-link {% if active=='dashboard' %}active{% endif %}" href="{{ url_for('dashboard') }}">
+              <i class="bi bi-house-door me-1"></i> Home
+            </a>
+
+            <div class="section-label mt-3 mb-2">Uploads</div>
+
+            <a class="nav-link brand-wu" href="{{ url_for('uploads_brand', brand='wu') }}">
+              <span class="brand-pill brand-wu">
+                <img class="brand-logo"
+                     src="{{ url_for('static', filename='logos/wu.svg') }}"
+                     alt="WU"
+                     onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                <span class="brand-fallback d-none">WU</span>
+              </span>
+              Western Union
+            </a>
+
+            <a class="nav-link brand-ria" href="{{ url_for('uploads_brand', brand='ria') }}">
+              <span class="brand-pill brand-ria">
+                <img class="brand-logo"
+                     src="{{ url_for('static', filename='logos/ria.svg') }}"
+                     alt="RIA"
+                     onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                <span class="brand-fallback d-none">RIA</span>
+              </span>
+              RIA
+            </a>
+
+            <a class="nav-link brand-mg" href="{{ url_for('uploads_brand', brand='mg') }}">
+              <span class="brand-pill brand-mg">
+                <img class="brand-logo"
+                     src="{{ url_for('static', filename='logos/mg.svg') }}"
+                     alt="MG"
+                     onerror="this.classList.add('d-none'); this.nextElementSibling.classList.remove('d-none');">
+                <span class="brand-fallback d-none">MG</span>
+              </span>
+              MoneyGram
+            </a>
+
+            <div class="section-label mt-3 mb-2">Insights</div>
+            <a class="nav-link {% if active=='analytics' %}active{% endif %}" href="{{ url_for('analytics') }}">
+              <i class="bi bi-activity me-1"></i> Analytics
+            </a>
+          </nav>
+        </div>
+      </div>
+
+      <!-- Main content -->
+      <main class="col-lg-10 col-xl-10 p-3 p-lg-4">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="mb-3">
+              {% for cat, msg in messages %}
+                <div class="alert alert-{{ 'warning' if cat=='message' else cat }} alert-dismissible fade show" role="alert">
+                  {{ msg }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS bundle -->
+  <script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"
+    integrity="sha384-YvpcrYf0tY3lHB60NNkmXc5s9fDVZLESaAA55NDzOxhy9GkcIdslK1eN7N6jIeHz"
+    crossorigin="anonymous"
+  ></script>
+  {% block scripts %}{% endblock %}
+</body>
+</html>

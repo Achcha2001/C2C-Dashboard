@@ -1,0 +1,94 @@
+/* ===== C2C Dashboard styling ===== */
+
+/* Base scale (shrinks a bit on narrower screens) */
+:root{
+  --c2c-font: 13px;
+  --c2c-pad-y: .25rem;
+  --c2c-pad-x: .35rem;
+
+  /* Table body font controls */
+  --c2c-table-font: .78rem;      /* default body cells */
+  --c2c-table-font-sm: .74rem;   /* ≤ 1400px */
+  --c2c-table-font-xs: .72rem;   /* ≤ 1200px */
+}
+@media (max-width: 1400px){ :root{ --c2c-font: 12px; } }
+@media (max-width: 1200px){ :root{ --c2c-font: 11.5px; } }
+
+body{ font-size: var(--c2c-font); }
+
+/* ---------- Compact, fixed-width table ---------- */
+.table.c2c{
+  table-layout: fixed;        /* predictable widths -> no horizontal scroll */
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+}
+.table.c2c th,
+.table.c2c td{
+  padding: var(--c2c-pad-y) var(--c2c-pad-x);
+  vertical-align: middle;
+  line-height: 1.15;
+  border-color: #e9ecef;
+}
+
+/* ---------- Header highlight (sticky) ---------- */
+.table.c2c thead th{
+  font-size: .66rem;          /* header text size */
+  white-space: normal;        /* allow wrapping to save width */
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .02em;
+  color: #0b5ed7;             /* Bootstrap primary hue */
+  background: linear-gradient(180deg, #f8fbff 0%, #eef4ff 100%);
+  border-bottom: 2px solid #bcd0ff;
+  position: sticky;           /* stays visible on vertical scroll */
+  top: 0;
+  z-index: 1;
+}
+
+/* Brand group heading cells in the header row */
+.c2c-brand-head{
+  text-align: center;
+  font-weight: 800;
+}
+
+/* ---------- Column widths (tune as needed) ---------- */
+.table.c2c .territory{ width: 8ch; }
+.table.c2c .code     { width: 7ch; }
+.table.c2c .name     { width: 16ch; }
+.table.c2c .district { width: 14ch; }
+.table.c2c .num{
+  width: 6ch;                 /* narrow numeric columns */
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ---------- Body font sizing (smaller than headers) ---------- */
+.table.c2c tbody td,
+.table.c2c tfoot td{
+  font-size: var(--c2c-table-font);
+}
+@media (max-width: 1400px){
+  .table.c2c tbody td,
+  .table.c2c tfoot td{ font-size: var(--c2c-table-font-sm); }
+}
+@media (max-width: 1200px){
+  .table.c2c tbody td,
+  .table.c2c tfoot td{ font-size: var(--c2c-table-font-xs); }
+}
+/* Optional: make numbers a touch tighter than text cells */
+.table.c2c .num{ font-size: .95em; }
+
+/* ---------- Row styles ---------- */
+.table.c2c tbody tr:nth-child(odd) td{ background: #fafafa; }
+.table.c2c .zone-row td   { background: #eef1f6; font-weight: 600; }
+.table.c2c .subtotal td   { background: #fff6cc; font-weight: 600; }
+.table.c2c .grand td      { background: #ffefb3; font-weight: 700; }
+
+/* ---------- Growth coloring ---------- */
+.g-pos  { color: #0a7f2e; }
+.g-neg  { color: #c71f1f; }
+.g-zero { color: #6c757d; }
+
+/* ---------- Cards ---------- */
+.card .card-body{ padding: .75rem 1rem; }

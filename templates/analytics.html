@@ -1,0 +1,375 @@
+{% extends "base.html" %}
+{% block head %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+  <style>
+    /* == Futuristic vibe for analytics == */
+    .neo-card .card-header{
+      background:linear-gradient(90deg,#0ea5e9 0%,#7c3aed 100%);
+      color:#fff; font-weight:600; letter-spacing:.3px;
+      box-shadow:0 8px 24px rgba(14,165,233,.2) inset;
+    }
+    .neo-card .card{
+      backdrop-filter: blur(6px);
+      border:1px solid rgba(99,102,241,.25);
+      box-shadow:0 12px 28px rgba(99,102,241,.12);
+    }
+    .neo-toolbar{
+      background:linear-gradient(180deg,rgba(2,6,23,.8),rgba(2,6,23,.6));
+      border:1px solid rgba(59,130,246,.25);
+      color:#cbd5e1; border-radius:.75rem; padding:.5rem .75rem;
+    }
+    .neo-toolbar select{
+      background:#0b1220; color:#e2e8f0; border-color:#334155;
+    }
+    .chart-wrap{ position:relative; min-height:260px; }
+    .chart-wrap .loading{
+      position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      gap:.6rem; background:linear-gradient(180deg,#0b1220,#0b1220ea); z-index:2; color:#9fb6ff;
+      border-radius:.5rem;
+    }
+    .chart-wrap canvas.invisible{ opacity:.05; }
+    .fs-btn{
+      border:none; background:rgba(255,255,255,.2); color:#fff;
+      border-radius:.4rem; padding:.2rem .5rem;
+    }
+    .card-header .title-inline{ display:flex; align-items:center; gap:.5rem; }
+    .legend-brand{
+      display:inline-flex; align-items:center; gap:.4rem; margin-left:.5rem;
+      padding:.15rem .45rem; border-radius:.3rem; background:#0b1220; color:#93c5fd; font-size:.8rem;
+      border:1px solid rgba(148,163,184,.25);
+    }
+  </style>
+{% endblock %}
+
+{% block content %}
+<h5 class="mb-3">Analytics</h5>
+
+<!-- Controls -->
+<div class="neo-card mb-3">
+  <div class="card">
+    <div class="card-body neo-toolbar d-flex flex-wrap gap-3 align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-calendar3"></i>
+        <label class="small text-muted">Period</label>
+        <select id="periodFilter" class="form-select form-select-sm" style="min-width:180px"></select>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-geo"></i>
+        <label class="small text-muted">Zone</label>
+        <select id="zoneFilter" class="form-select form-select-sm" style="min-width:110px"></select>
+      </div>
+      <div class="ms-auto small">
+        Tips: Click any slice/bar for drill-down • Use ⛶ to go full screen
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3 neo-card">
+  <div class="col-xl-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="title-inline">
+          <i class="bi bi-bar-chart"></i> Totals by Brand
+          <span class="legend-brand"><img src="{{ url_for('static', filename='logos/wu.svg') }}" height="14"> WU</span>
+          <span class="legend-brand"><img src="{{ url_for('static', filename='logos/ria.svg') }}" height="14"> RIA</span>
+          <span class="legend-brand"><img src="{{ url_for('static', filename='logos/mg.svg') }}" height="14"> MG</span>
+        </div>
+        <button class="fs-btn" data-fs="#wrap-brand" title="Full screen">⛶</button>
+      </div>
+      <div class="card-body">
+        <div id="wrap-brand" class="chart-wrap">
+          <div class="loading"><div class="spinner-border" role="status" aria-hidden="true"></div><span>Loading…</span></div>
+          <canvas id="brandBar" height="140" class="invisible"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-6">
+    <div class="card">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <div class="title-inline"><i class="bi bi-pie-chart"></i> Top Agents</div>
+        <button class="fs-btn" data-fs="#wrap-agents" title="Full screen">⛶</button>
+      </div>
+      <div class="card-body">
+        <div id="wrap-agents" class="chart-wrap">
+          <div class="loading"><div class="spinner-border" role="status" aria-hidden="true"></div><span>Loading…</span></div>
+          <canvas id="agentsPie" height="140" class="invisible"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Leaders -->
+<div class="neo-card mt-3">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="title-inline">
+        <i class="bi bi-clipboard-data"></i>
+        <span id="leadersTitle">Overall Performance — per Team Leader (stacked by brand)</span>
+        <span id="zoneMeta" class="ms-2 small"></span>
+      </div>
+      <button class="fs-btn" data-fs="#wrap-leaders" title="Full screen">⛶</button>
+    </div>
+    <div class="card-body">
+      <div id="wrap-leaders" class="chart-wrap">
+        <div class="loading"><div class="spinner-border" role="status" aria-hidden="true"></div><span>Loading…</span></div>
+        <canvas id="leadersBar" height="280" class="invisible"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Overall Agent View -->
+<div class="neo-card mt-3">
+  <div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+      <div class="title-inline"><i class="bi bi-people"></i> Overall Agent View — stacked by brand</div>
+      <button class="fs-btn" data-fs="#wrap-agentsbar" title="Full screen">⛶</button>
+    </div>
+    <div class="card-body">
+      <div id="wrap-agentsbar" class="chart-wrap">
+        <div class="loading"><div class="spinner-border" role="status" aria-hidden="true"></div><span>Loading…</span></div>
+        <canvas id="agentsBar" height="320" class="invisible"></canvas>
+      </div>
+    </div>
+    <div class="card-footer small text-muted bg-white">
+      Click a bar to see the brand split for that BDO/Agent.
+    </div>
+  </div>
+</div>
+
+<!-- Drilldown modal -->
+<div class="modal fade" id="genericModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title" id="genericModalTitle">Details</h6>
+        <button class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body" id="genericModalBody"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script id="charts-data" type="application/json">{{ charts_json|tojson }}</script>
+<script>
+  // ---------- helpers ----------
+  function setLoading(wrapperId, on=true){
+    const wrap = document.getElementById(wrapperId);
+    if (!wrap) return;
+    const loader = wrap.querySelector('.loading');
+    const cvs    = wrap.querySelector('canvas');
+    if (loader) loader.style.display = on ? 'flex' : 'none';
+    if (cvs)    cvs.classList.toggle('invisible', on);
+  }
+  function attachFullscreenButtons(){
+    document.querySelectorAll('[data-fs]').forEach(btn=>{
+      btn.addEventListener('click', ()=>{
+        const sel = btn.getAttribute('data-fs');
+        const el  = document.querySelector(sel);
+        if (el.requestFullscreen) el.requestFullscreen();
+      });
+    });
+  }
+  attachFullscreenButtons();
+
+  // ---------- controls ----------
+  const periodSel = document.getElementById('periodFilter');
+  const zoneSel   = document.getElementById('zoneFilter');
+  const zoneMeta  = document.getElementById('zoneMeta');
+
+  async function initControls(){
+    const res = await fetch('/api/periods');
+    const j   = await res.json();
+    // period dropdown
+    periodSel.innerHTML = (j.periods||[]).map(p => `<option value="${p.key}">${p.label}</option>`).join('');
+    // zone dropdown
+    const zones = (j.zones||[]).map(z => z.zone_key);
+    zoneSel.innerHTML = ['All'].concat(zones).map(z => `<option value="${z}">${z}</option>`).join('');
+    // select newest by default
+    if (j.periods && j.periods.length) periodSel.value = j.periods[0].key;
+    zoneSel.value = zones[0] || 'All';
+
+    periodSel.addEventListener('change', refreshAll);
+    zoneSel.addEventListener('change', refreshAll);
+    refreshAll();
+  }
+
+  // ---------- Brand totals + Top Agents ----------
+  let brandChart, pieChart;
+  async function loadSummary(){
+    const p = periodSel.value;
+    setLoading('wrap-brand', true);
+    setLoading('wrap-agents', true);
+    const resp = await fetch(`/api/summary?p=${encodeURIComponent(p)}`);
+    const data = await resp.json();
+
+    // brand totals
+    if (brandChart) brandChart.destroy();
+    brandChart = new Chart(document.getElementById('brandBar'), {
+      type: 'bar',
+      data: { labels: data.brandBar.labels, datasets: [{ label: 'Total', data: data.brandBar.values }] },
+      options: { responsive: true, plugins: { legend: { display: true } } }
+    });
+    setLoading('wrap-brand', false);
+
+    // top agents (pie)
+    if (pieChart) pieChart.destroy();
+    pieChart = new Chart(document.getElementById('agentsPie'), {
+      type: 'pie',
+      data: { labels: data.agentsPie.labels, datasets: [{ data: data.agentsPie.values }] },
+      options: {
+        responsive: true,
+        onClick: async (evt, els)=>{
+          if (!els.length) return;
+          const idx = els[0].index;
+          const name = data.agentsPie.labels[idx];
+          const d = await (await fetch(`/api/agent-detail?p=${encodeURIComponent(p)}&name=${encodeURIComponent(name)}`)).json();
+          openModal(`${name} — Brand split`,
+            `<table class="table table-sm mb-0">
+               <tr><th>WU</th><td class="text-end">${d.brands.WU.toLocaleString()}</td></tr>
+               <tr><th>RIA</th><td class="text-end">${d.brands.RIA.toLocaleString()}</td></tr>
+               <tr><th>MG</th><td class="text-end">${d.brands.MG.toLocaleString()}</td></tr>
+               <tr class="table-secondary"><th>Total</th><td class="text-end"><strong>${d.total.toLocaleString()}</strong></td></tr>
+             </table>`);
+        }
+      }
+    });
+    setLoading('wrap-agents', false);
+  }
+
+  // ---------- Leaders stacked bar with avatars on bars ----------
+  let leadersChart;
+  const barAvatarPlugin = {
+    id: 'barAvatars',
+    afterDatasetsDraw(chart, args){
+      const avatars = chart.config._avatars || [];
+      const {ctx} = chart;
+      const meta = chart.getDatasetMeta(0); // first dataset rectangles
+      if (!meta || !meta.data) return;
+      meta.data.forEach((rect, i)=>{
+        const img = avatars[i]; if (!img) return;
+        const props = rect.getProps(['x','y','base','width','height'], true);
+        // For horizontal bars, left edge is min(base, x)
+        const left = Math.min(props.base, props.x) + 6;
+        const cy   = props.y;
+        const size = 22;
+        ctx.save();
+        ctx.beginPath(); ctx.arc(left + size/2, cy, size/2, 0, Math.PI*2); ctx.clip();
+        ctx.drawImage(img, left, cy - size/2, size, size);
+        ctx.restore();
+      });
+    }
+  };
+  Chart.register(barAvatarPlugin);
+
+  async function loadLeaders(){
+    const p = periodSel.value;
+    const zone = zoneSel.value;
+    setLoading('wrap-leaders', true);
+    const data = await (await fetch(`/api/zone-leaders?p=${encodeURIComponent(p)}&zone=${encodeURIComponent(zone)}`)).json();
+
+    zoneMeta.innerHTML = `ZM: <img src="${data.meta.zm_avatar}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid #dbe3f4;margin-right:4px" onerror="this.src='/static/avatars/default.png'"><strong>${data.meta.zm}</strong>`;
+
+    // preload avatars
+    const imgs = await Promise.all((data.avatars||[]).map(src => new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; })));
+    if (leadersChart) leadersChart.destroy();
+    leadersChart = new Chart(document.getElementById('leadersBar'), {
+      type: 'bar',
+      data: { labels: data.labels,
+        datasets: [
+          { label:'WU',  data:data.wu,  stack:'brand' },
+          { label:'RIA', data:data.ria, stack:'brand' },
+          { label:'MG',  data:data.mg,  stack:'brand' },
+        ]},
+      options:{
+        indexAxis:'y',
+        responsive:true,
+        plugins:{ legend:{ position:'top' } },
+        scales:{ x:{ stacked:true }, y:{ stacked:true } },
+        onClick: (evt, els)=>{
+          if (!els.length) return;
+          const idx = els[0].index;
+          openLeaderDetail(data.labels[idx]);
+        }
+      },
+      plugins:['barAvatars']
+    });
+    leadersChart.config._avatars = imgs;
+    setLoading('wrap-leaders', false);
+
+    async function openLeaderDetail(leader){
+      const j = await (await fetch(`/api/zone-leader-detail?p=${encodeURIComponent(p)}&zone=${encodeURIComponent(zone)}&leader=${encodeURIComponent(leader)}`)).json();
+      const rows = (j.rows||[]).map(r =>
+        `<tr><td>${r.bdo}</td><td class="text-end">${r.wu.toLocaleString()}</td><td class="text-end">${r.ria.toLocaleString()}</td><td class="text-end">${r.mg.toLocaleString()}</td><td class="text-end"><strong>${r.total.toLocaleString()}</strong></td></tr>`
+      ).join("");
+      openModal(`${leader} — BDO breakdown`,
+        `<table class="table table-sm table-striped mb-0">
+           <thead><tr><th>BDO</th><th class="text-end">WU</th><th class="text-end">RIA</th><th class="text-end">MG</th><th class="text-end">TOTAL</th></tr></thead>
+           <tbody>${rows || '<tr><td colspan="5" class="text-muted">No data.</td></tr>'}</tbody>
+         </table>`);
+    }
+  }
+
+  // ---------- Overall Agent View (per BDO name) ----------
+  let agentsBarChart;
+  async function loadAgentsBar(){
+    const p = periodSel.value;
+    const zone = zoneSel.value;
+    setLoading('wrap-agentsbar', true);
+    const data = await (await fetch(`/api/agents-overview?p=${encodeURIComponent(p)}&zone=${encodeURIComponent(zone)}`)).json();
+
+    const imgs = await Promise.all((data.avatars||[]).map(src => new Promise(res=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=()=>res(null); i.src=src; })));
+    if (agentsBarChart) agentsBarChart.destroy();
+    agentsBarChart = new Chart(document.getElementById('agentsBar'), {
+      type: 'bar',
+      data: { labels: data.labels,
+        datasets: [
+          { label:'WU',  data:data.wu,  stack:'brand' },
+          { label:'RIA', data:data.ria, stack:'brand' },
+          { label:'MG',  data:data.mg,  stack:'brand' },
+        ]},
+      options:{
+        indexAxis:'y',
+        responsive:true,
+        plugins:{ legend:{ position:'top' } },
+        scales:{ x:{ stacked:true }, y:{ stacked:true } },
+        onClick: async (evt, els)=>{
+          if (!els.length) return;
+          const idx = els[0].index;
+          const name = data.labels[idx];
+          const d = await (await fetch(`/api/agent-detail?p=${encodeURIComponent(p)}&name=${encodeURIComponent(name)}`)).json();
+          openModal(`${name} — Brand split`,
+            `<table class="table table-sm mb-0">
+               <tr><th>WU</th><td class="text-end">${d.brands.WU.toLocaleString()}</td></tr>
+               <tr><th>RIA</th><td class="text-end">${d.brands.RIA.toLocaleString()}</td></tr>
+               <tr><th>MG</th><td class="text-end">${d.brands.MG.toLocaleString()}</td></tr>
+               <tr class="table-secondary"><th>Total</th><td class="text-end"><strong>${d.total.toLocaleString()}</strong></td></tr>
+             </table>`);
+        }
+      },
+      plugins:['barAvatars']
+    });
+    agentsBarChart.config._avatars = imgs;
+    setLoading('wrap-agentsbar', false);
+  }
+
+  function openModal(title, html){
+    document.getElementById('genericModalTitle').textContent = title;
+    document.getElementById('genericModalBody').innerHTML = html;
+    new bootstrap.Modal(document.getElementById('genericModal')).show();
+  }
+
+  async function refreshAll(){
+    await Promise.all([loadSummary(), loadLeaders(), loadAgentsBar()]);
+  }
+
+  // boot
+  initControls();
+</script>
+{% endblock %}

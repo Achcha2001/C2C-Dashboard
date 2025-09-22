@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>MMBL – C2C Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- Bootstrap -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <style>
+    body { background:#f6f7fb; }
+    .sidebar { width: 260px; }
+    .brand-badge { letter-spacing:.5px; font-weight:700; }
+    .card-kpi .value { font-size:1.75rem; font-weight:700; }
+    .table-sm td, .table-sm th { padding: .35rem .5rem; }
+    .logo { width:36px; height:36px; object-fit:contain; }
+    .sticky-topbar { position:sticky; top:0; z-index:1030; }
+  </style>
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='kpi-future.css') }}">
+
+</head>
+<body>
+
+<!-- Top Bar -->
+<nav class="navbar navbar-light bg-white border-bottom sticky-topbar">
+  <div class="container-fluid px-3">
+    <div class="d-flex align-items-center gap-2">
+      <img src="{{ url_for('static', filename='logo.png') }}" alt="MMBL" class="logo rounded" onerror="this.style.visibility='hidden'">
+      <span class="brand-badge">MMBL — C2C Dashboard</span>
+      <span class="text-muted small d-none d-md-inline ms-2">Uploads • Analytics • BDO / Sales Rep</span>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a class="btn btn-outline-secondary btn-sm" href="#uploads"><i class="bi bi-upload"></i> Uploads</a>
+      <a class="btn btn-dark btn-sm" href="#analytics"><i class="bi bi-graph-up"></i> Analytics</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid">
+  <div class="row">
+    <!-- Sidebar -->
+    <aside class="col-md-3 col-lg-2 p-3 bg-white border-end sidebar d-none d-md-block" id="side">
+      <div class="mb-2 text-uppercase small text-muted">Menu</div>
+      <ul class="nav flex-column gap-1">
+        <li class="nav-item"><a class="nav-link active" href="#home"><i class="bi bi-house me-2"></i>Home</a></li>
+        <li class="nav-item"><a class="nav-link" href="#uploads"><i class="bi bi-upload me-2"></i>Uploads</a></li>
+        <li class="nav-item"><a class="nav-link" href="#analytics"><i class="bi bi-graph-up me-2"></i>Analytics</a></li>
+      </ul>
+      <div class="mt-auto small text-muted pt-3">&copy; {{ year }} MMBL</div>
+    </aside>
+
+    <!-- Main -->
+    <main class="col-md-9 col-lg-10 p-3 p-md-4">
+
+      <!-- Home tiles -->
+<section id="home" class="mb-4">
+  <div class="row kpi-grid">
+    <div class="col-sm-6 col-xl-3">
+      <div class="card kpi-card kpi--grand shadow-none">
+        <div class="kpi-chip"><i class="bi bi-collection"></i></div>
+        <div class="card-body">
+          <div class="kpi-title">Grand Total</div>
+          <h2 class="kpi-value">{{ "{:,}".format((analytics.grand_total or 0)|int) }}</h2>
+          <div class="kpi-sub">WU + RIA + MG</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card kpi-card kpi--wu shadow-none">
+        <div class="kpi-chip"><i class="bi bi-lightning-charge"></i></div>
+        <div class="card-body">
+          <div class="kpi-title">WU Total</div>
+          <h2 class="kpi-value">{{ "{:,}".format((analytics.brand_totals.WU or 0)|int) }}</h2>
+          <div class="kpi-sub">Western Union</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card kpi-card kpi--ria shadow-none">
+        <div class="kpi-chip"><i class="bi bi-rocket-takeoff"></i></div>
+        <div class="card-body">
+          <div class="kpi-title">RIA Total</div>
+          <h2 class="kpi-value">{{ "{:,}".format((analytics.brand_totals.RIA or 0)|int) }}</h2>
+          <div class="kpi-sub">Ria</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-sm-6 col-xl-3">
+      <div class="card kpi-card kpi--mg shadow-none">
+        <div class="kpi-chip"><i class="bi bi-diagram-3"></i></div>
+        <div class="card-body">
+          <div class="kpi-title">MG Total</div>
+          <h2 class="kpi-value">{{ "{:,}".format((analytics.brand_totals.MG or 0)|int) }}</h2>
+          <div class="kpi-sub">MoneyGram</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+      <!-- Uploads -->
+      <section id="uploads" class="mt-3">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <h5 class="mb-0">Upload Sales Reports</h5>
+          <form method="POST" action="/" enctype="multipart/form-data">
+            <div class="row g-2 align-items-end">
+              <div class="col-md-3">
+                <label class="form-label small">Western Union</label>
+                <input type="file" class="form-control form-control-sm" name="western_union" accept=".xlsx,.xls,.csv">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small">RIA</label>
+                <input type="file" class="form-control form-control-sm" name="ria" accept=".xlsx,.xls,.csv">
+              </div>
+              <div class="col-md-3">
+                <label class="form-label small">MoneyGram</label>
+                <input type="file" class="form-control form-control-sm" name="moneygram" accept=".xlsx,.xls,.csv">
+              </div>
+              <div class="col-md-3">
+                <button type="submit" class="btn btn-success btn-sm"><i class="bi bi-cloud-arrow-up"></i> Upload & Process</button>
+              </div>
+            </div>
+          </form>
+        </div>
+
+        {% if tables.wu_city or tables.ria_city or tables.mg_city %}
+          <div class="row g-3 mt-1">
+            {% if tables.wu_city %}
+              <div class="col-lg-4">
+                <div class="card shadow-sm">
+                  <div class="card-header bg-white"><strong class="text-success">Western Union</strong> — State/Province/City</div>
+                  <div class="card-body table-responsive">
+                    {{ tables.wu_city|safe }}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            {% if tables.ria_city %}
+              <div class="col-lg-4">
+                <div class="card shadow-sm">
+                  <div class="card-header bg-white"><strong class="text-warning">RIA</strong> — State/Province/City</div>
+                  <div class="card-body table-responsive">
+                    {{ tables.ria_city|safe }}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+            {% if tables.mg_city %}
+              <div class="col-lg-4">
+                <div class="card shadow-sm">
+                  <div class="card-header bg-white"><strong class="text-danger">MoneyGram</strong> — State/Province/City</div>
+                  <div class="card-body table-responsive">
+                    {{ tables.mg_city|safe }}
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </section>
+
+      <!-- Analytics -->
+      <section id="analytics" class="mt-4">
+        <div class="row g-3">
+          <div class="col-xl-6">
+            <div class="card shadow-sm">
+              <div class="card-header bg-white"><i class="bi bi-bar-chart"></i> Totals by Brand</div>
+              <div class="card-body">
+                <canvas id="brandBar" height="140"></canvas>
+              </div>
+            </div>
+          </div>
+          <div class="col-xl-6">
+            <div class="card shadow-sm">
+              <div class="card-header bg-white"><i class="bi bi-pie-chart"></i> Top BDOs</div>
+              <div class="card-body">
+                <canvas id="bdoPie" height="140"></canvas>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- BDO → Sales Rep table -->
+        <div class="card shadow-sm mt-3">
+          <div class="card-header bg-white"><i class="bi bi-people"></i> Name of BDO → Name of Sales Rep (with totals)</div>
+          <div class="card-body table-responsive">
+            {{ tables.bdo_sales|safe }}
+          </div>
+        </div>
+      </section>
+
+    </main>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+
+<!-- Put server data as pure JSON so editors don't complain -->
+<script id="charts-data" type="application/json">
+  {{ charts_json | tojson }}
+</script>
+
+<script>
+  const charts = JSON.parse(document.getElementById('charts-data').textContent || "{}");
+
+  // Brand totals bar
+  if (charts && charts.brandBar) {
+    new Chart(document.getElementById('brandBar'), {
+      type: 'bar',
+      data: {
+        labels: charts.brandBar.labels,
+        datasets: [{ label: 'Total', data: charts.brandBar.values }]
+      },
+      options: { responsive: true, plugins: { legend: { display: true } } }
+    });
+  }
+
+  // BDO pie
+  if (charts && charts.bdoPie) {
+    new Chart(document.getElementById('bdoPie'), {
+      type: 'pie',
+      data: {
+        labels: charts.bdoPie.labels,
+        datasets: [{ data: charts.bdoPie.values }]
+      },
+      options: { responsive: true }
+    });
+  }
+</script>
+
+</body>
+</html>

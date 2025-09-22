@@ -1,0 +1,366 @@
+{% extends "base.html" %}
+
+{# ---------- Helpers ---------- #}
+{% macro growth_cell(txt) -%}
+  {%- set cls = 'g-zero' -%}
+  {%- if txt == '#DIV/0!' -%}
+    {%- set cls = 'g-neg' -%}
+  {%- else -%}
+    {%- set n = (txt|string).replace('%','')|int -%}
+    {%- if n < 0 -%}{% set cls='g-neg' %}{%- elif n > 0 -%}{% set cls='g-pos' %}{%- endif -%}
+  {%- endif -%}
+  {%- set shown = txt -%}
+  {%- if ('-' in (txt|string)) -%}{% set shown = '(' ~ (txt|string).replace('-', '') ~ ')' %}{%- endif -%}
+  <span class="num {{ cls }}">{{ shown }}</span>
+{%- endmacro %}
+
+{# ---------- Reusable brand table (one panel) ---------- #}
+{% macro brand_table(brand_key, brand_title, band_class) %}
+{# Map TOTAL to the prefix used in your subtotal/grand keys (T_a, T_b, T_g) #}
+{% set K = 'T' if brand_key == 'TOTAL' else brand_key %}
+
+<div class="brand-panel">
+  <table class="table table-sm c2c brand mb-0">
+    <thead>
+      <tr>
+        <th colspan="4"></th>
+        <th colspan="3" class="band {{ band_class }}">{{ brand_title }}</th>
+      </tr>
+      <tr class="table-light align-middle">
+        <th class="territory">TERRITORY</th>
+        <th class="code">BDO</th>
+        <th class="name">NAME</th>
+        <th class="district">DISTRICT</th>
+        <th class="num">ACH {{ y1 }}</th>
+        <th class="num">ACH {{ y2 }}</th>
+        <th>GROWTH</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for block in blocks %}
+        {% if not loop.first %}
+          <tr class="zone-gap"><td colspan="7"></td></tr>
+        {% endif %}
+        <tr class="zone-row">
+          <td colspan="7">
+            <strong>{{ block.meta.territory }}</strong> — {{ block.meta.title }}
+            <span class="text-muted">&nbsp; ZM - {{ block.meta.zm }}</span>
+          </td>
+        </tr>
+
+        {% for r in block.rows %}
+        {% set B = r[brand_key] if r and brand_key in r else {'a':0,'b':0,'g':'0%'} %}
+        <tr>
+          {% if r.show_territory %}
+            <td class="territory" rowspan="{{ r.territory_span }}">{{ block.meta.territory }}</td>
+          {% endif %}
+          <td class="code">{{ r.bdo }}</td>
+
+          {% if r.show_name %}
+            <td class="name" rowspan="{{ r.name_span }}">
+              <div class="bdo-cell">
+                {# Avatar with chained fallbacks (.jpg/.png, bdo & name) #}
+                {% set bcode = (r.bdo or '')|lower %}
+                {% set nslug = (r.name or '')|lower|replace(' ','')|replace('.','') %}
+              <img
+  class="bdo-avatar"
+  src="{{ avatar_src(r.name or r.bdo) }}"
+  alt="{{ r.name or r.bdo }}"
+/>
+
+                <a href="#" class="bdo-link" data-bdo="{{ r.bdo }}" data-name="{{ r.name }}">{{ r.name }}</a>
+              </div>
+            </td>
+          {% endif %}
+
+          <td class="district">{{ r.district }}</td>
+          <td class="num">{{ "{:,}".format((B.a)|default(0)) }}</td>
+          <td class="num">{{ "{:,}".format((B.b)|default(0)) }}</td>
+          <td>{{ growth_cell(B.g|default('0%')) }}</td>
+        </tr>
+        {% endfor %}
+
+        {# subtotal for this brand #}
+        {% set sa = block.subtotal[K ~ '_a']|default(0) %}
+        {% set sb = block.subtotal[K ~ '_b']|default(0) %}
+        {% set sg = block.subtotal[K ~ '_g']|default('0%') %}
+        <tr class="subtotal">
+          <td colspan="4">{{ block.meta.title }} — ZM: {{ block.meta.zm }}</td>
+          <td class="num">{{ "{:,}".format(sa|int) }}</td>
+          <td class="num">{{ "{:,}".format(sb|int) }}</td>
+          <td>{{ growth_cell(sg) }}</td>
+        </tr>
+      {% endfor %}
+
+      {# grand for this brand #}
+      {% set ga = grand[K ~ '_a']|default(0) %}
+      {% set gb = grand[K ~ '_b']|default(0) %}
+      {% set gg = grand[K ~ '_g']|default('0%') %}
+      <tr class="grand">
+        <td colspan="4">TOTAL</td>
+        <td class="num">{{ "{:,}".format(ga|int) }}</td>
+        <td class="num">{{ "{:,}".format(gb|int) }}</td>
+        <td>{{ growth_cell(gg) }}</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% endmacro %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{{ url_for('static', filename='c2c-dashboard.css') }}">
+
+<style>
+  /* --- Layout for horizontal brand panels --- */
+  .brand-strip{
+    display:flex; gap:12px; padding:.5rem;
+    overflow-x:auto; scroll-snap-type:x proximity;
+  }
+  .brand-panel{
+    min-width: 760px;
+    scroll-snap-align:start;
+    border-radius:12px;
+    box-shadow: 0 6px 22px rgba(16,24,40,.06);
+    background: linear-gradient(180deg,#fff, #fbfcff);
+    border: 1px solid #e6ecf7;
+  }
+
+  /* Brand color bands */
+  .brand .band{ text-align:center; font-weight:700; }
+  .band-wu{  background:var(--wu); }
+  .band-ria{ background:var(--ria); }
+  .band-mg{  background:var(--mg); }
+  .band-tot{ background:var(--tot); }
+
+  /* Avatar + stacked name (prevents overlap & shows full name) */
+  .bdo-cell{ display:flex; flex-direction:column; align-items:center; gap:.35rem; padding:.25rem 0; }
+  .bdo-avatar{ width:40px; height:40px; border-radius:50%; object-fit:cover; border:1px solid #d7dfef; background:#f4f6fb; }
+  .bdo-link{ text-decoration:none; font-weight:600; color:#0f172a; text-align:center; line-height:1.15; }
+  .bdo-link:hover{ text-decoration:underline; }
+
+  /* Column sizing for readability */
+  .table.c2c .territory{ width:120px; }
+  .table.c2c .code{ width:80px; text-align:center; }
+  .table.c2c .name{ width:160px; }
+  .table.c2c .district{ width:150px; }
+
+  .zone-gap td{ height:14px; border:0!important; background:transparent!important; }
+
+  /* Fullscreen adjustments */
+  #tableCard:fullscreen .card-body{ height:calc(100vh - 4rem); overflow:auto; }
+  .table-fullscr{ height:calc(100vh - 4rem); overflow:auto; }
+</style>
+
+{# ---------- KPI cards ---------- #}
+<div class="row g-3">
+  <div class="col-sm-6 col-xl-3">
+    <div class="card shadow-sm"><div class="card-body">
+      <div class="text-muted small">Grand Total</div>
+      <div class="fs-2 fw-bold">{{ "{:,}".format((analytics.grand_total or 0)|int) }}</div>
+      <div class="text-muted small">WU + RIA + MG</div>
+    </div></div>
+  </div>
+  <div class="col-sm-6 col-xl-3"><div class="card shadow-sm"><div class="card-body">
+    <div class="text-muted small">WU Total</div>
+    <div class="fs-2 fw-bold">{{ "{:,}".format((analytics.brand_totals.WU or 0)|int) }}</div>
+  </div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card shadow-sm"><div class="card-body">
+    <div class="text-muted small">RIA Total</div>
+    <div class="fs-2 fw-bold">{{ "{:,}".format((analytics.brand_totals.RIA or 0)|int) }}</div>
+  </div></div></div>
+  <div class="col-sm-6 col-xl-3"><div class="card shadow-sm"><div class="card-body">
+    <div class="text-muted small">MG Total</div>
+    <div class="fs-2 fw-bold">{{ "{:,}".format((analytics.brand_totals.MG or 0)|int) }}</div>
+  </div></div></div>
+</div>
+
+{# ---------- Period filters ---------- #}
+<div class="card shadow-sm mt-3">
+  <div class="card-body">
+    <form method="get" class="row gy-2 gx-2 align-items-end">
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label small">Period A (Current)</label>
+        <select name="p1" class="form-select form-select-sm">
+          {% for per in periods %}
+            <option value="{{ per.key }}" {% if p1 and per.key==p1.key %}selected{% endif %}>{{ per.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4 col-lg-3">
+        <label class="form-label small">Period B (Compare to)</label>
+        <select name="p2" class="form-select form-select-sm">
+          {% for per in periods %}
+            <option value="{{ per.key }}" {% if p2 and per.key==p2.key %}selected{% endif %}>{{ per.label }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <button class="btn btn-primary btn-sm"><i class="bi bi-funnel"></i> Apply</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{# ---------- Panels (one table per brand) ---------- #}
+<div class="card shadow-sm mt-3" id="tableCard" data-p1="{{ p1.key if p1 }}" data-p2="{{ p2.key if p2 }}">
+  <div class="card-header bg-white fw-semibold d-flex justify-content-between align-items-center">
+    <span>{{ p1.label if p1 else '' }} vs {{ p2.label if p2 else '' }} — WESTERN UNION / RIA / MONEYGRAM / TOTAL</span>
+    <button class="btn btn-sm btn-outline-secondary" id="btnFullscreen">
+      <i class="bi bi-arrows-fullscreen"></i> Full screen
+    </button>
+  </div>
+
+  <div class="card-body p-0">
+    {% if not blocks %}
+      <div class="p-3 text-muted">Upload files (with month &amp; year in the filename) to see the comparison tables.</div>
+    {% else %}
+      <div class="brand-strip">
+        {{ brand_table('WU',     'WESTERN UNION', 'band-wu')  }}
+        {{ brand_table('RIA',    'RIA',           'band-ria') }}
+        {{ brand_table('MG',     'MONEYGRAM',     'band-mg')  }}
+        {{ brand_table('TOTAL',  'TOTAL',         'band-tot') }}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{# ---------- Performance modal ---------- #}
+<div class="modal fade" id="perfModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-scrollable">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h6 class="modal-title" id="perfTitle">Performance</h6>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <div id="perfBody">
+          <div class="text-center text-muted py-5" id="perfLoading">Loading…</div>
+          <div class="d-none" id="perfContent">
+            <div class="row g-3">
+              <div class="col-lg-7">
+                <canvas id="perfChart" height="180"></canvas>
+              </div>
+              <div class="col-lg-5">
+                <div class="table-responsive">
+                  <table class="table table-sm">
+                    <thead>
+                      <tr class="table-light">
+                        <th>District</th>
+                        <th class="text-end">{{ p1.label if p1 }}</th>
+                        <th class="text-end">{{ p2.label if p2 }}</th>
+                      </tr>
+                    </thead>
+                    <tbody id="perfTable"></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          </div> <!-- perfContent -->
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Avatar fallback chain: try multiple sources then default
+  function chainAvatar(img){
+    const list = (img.dataset.srcs || '').split('|').map(s=>s.trim()).filter(Boolean);
+    let i = +(img.dataset.idx || 0);
+    if (i < list.length - 1){
+      img.dataset.idx = i + 1;
+      img.src = list[i + 1];
+    } else {
+      img.onerror = null;
+      img.src = img.dataset.fallback;
+    }
+  }
+
+  // Load Chart.js if needed (for the modal)
+  let chartScriptLoaded = !!window.Chart;
+  (function ensureChartJs(){
+    if (window.Chart) return;
+    const s=document.createElement('script');
+    s.src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js";
+    s.onload = () => { chartScriptLoaded = true; };
+    document.head.appendChild(s);
+  })();
+  function waitForChart(){
+    return new Promise(resolve=>{
+      if (window.Chart) return resolve();
+      const iv = setInterval(()=>{ if (window.Chart || chartScriptLoaded) { clearInterval(iv); resolve(); } }, 50);
+    });
+  }
+
+  // Fullscreen toggle for the panel card
+  const fsBtn = document.getElementById('btnFullscreen');
+  const card  = document.getElementById('tableCard');
+  fsBtn?.addEventListener('click', (e)=>{
+    e.preventDefault();
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+    } else {
+      (card.requestFullscreen ? card : card.querySelector('.card-body')).requestFullscreen()
+        .catch(()=>card.querySelector('.card-body').classList.add('table-fullscr'));
+    }
+  });
+
+  // Performance modal with small summary chart
+  const perfModalEl = document.getElementById('perfModal');
+  const perfModal   = new bootstrap.Modal(perfModalEl);
+  let perfChart;
+
+  function fmt(n){ return (n||0).toLocaleString(); }
+
+  async function openPerf(bdo, name){
+    const p1 = card.dataset.p1, p2 = card.dataset.p2;
+    document.getElementById('perfTitle').textContent = `${name} (${bdo}) — Performance`;
+    document.getElementById('perfLoading').classList.remove('d-none');
+    document.getElementById('perfContent').classList.add('d-none');
+    perfModal.show();
+
+    const res = await fetch(`/api/performance?bdo=${encodeURIComponent(bdo)}&p1=${encodeURIComponent(p1)}&p2=${encodeURIComponent(p2)}`);
+    const data = await res.json();
+
+    const tbody = document.getElementById('perfTable');
+    tbody.innerHTML = '';
+    (data.rows || []).forEach(r=>{
+      const tr=document.createElement('tr');
+      tr.innerHTML = `<td>${r.district||''}</td>
+        <td class="text-end">${fmt(r.p1_total)}</td>
+        <td class="text-end">${fmt(r.p2_total)}</td>`;
+      tbody.appendChild(tr);
+    });
+
+    await waitForChart();
+    const ctx = document.getElementById('perfChart');
+    if (perfChart) perfChart.destroy();
+    perfChart = new Chart(ctx, {
+      type:'bar',
+      data:{
+        labels:data.labels,
+        datasets:[
+          {label:data.p1_label, data:data.p1_values},
+          {label:data.p2_label, data:data.p2_values}
+        ]
+      },
+      options:{ responsive:true, plugins:{ legend:{ position:'bottom' } } }
+    });
+
+    document.getElementById('perfLoading').classList.add('d-none');
+    document.getElementById('perfContent').classList.remove('d-none');
+  }
+
+  // Delegate clicks on any .bdo-link inside the card
+  card.addEventListener('click', (e)=>{
+    const a = e.target.closest('.bdo-link');
+    if (!a) return;
+    e.preventDefault();
+    openPerf(a.dataset.bdo, a.dataset.name);
+  });
+</script>
+{% endblock %}

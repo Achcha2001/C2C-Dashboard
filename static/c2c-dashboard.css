@@ -1,0 +1,149 @@
+/* ===== MMBL C2C — Excel-like brand blocks ================================= */
+:root{
+  --ink:#0f172a;          --muted:#64748b;
+
+  --grid:#cfd7e6;         /* table grid */
+  --grid-strong:#9fb1cf;  /* (kept for general grid accents) */
+
+  /* Brand bars */
+  --wu:#ffe15a;           /* Western Union title band */
+  --ria:#ffa24d;          /* RIA title band */
+  --mg:#eef1f6;           /* MoneyGram title band */
+  --tot:#ddebff;          /* TOTAL title band */
+
+  /* Sub-headers under each brand */
+  --wu-sub:#fbf4da;
+  --ria-sub:#ffe7d3;
+  --mg-sub:#f7f9fc;
+  --tot-sub:#edf4ff;
+
+  /* Emphasis rows */
+  --subtotal:#fff06b;     /* zone subtotal (yellow) */
+  --grand:#ffec4f;        /* grand total (strong yellow) */
+
+  --pos:#0f8a3c;          --neg:#c81e1e;     --zero:#6b7280;
+}
+
+/* Base table */
+.table.c2c{
+  width:100%;
+  table-layout:fixed;
+  border-collapse:separate;
+  border-spacing:0;
+  font-variant-numeric:tabular-nums;
+  color:var(--ink);
+}
+.table.c2c th,.table.c2c td{
+  padding:.5rem .6rem;
+  border:1px solid var(--grid);
+  background:#fff;
+}
+.table.c2c thead th{
+  position:sticky; top:0; z-index:2;
+  text-transform:uppercase; letter-spacing:.02em;
+  font-weight:700; font-size:.68rem;
+}
+
+/* First header row — brand title bars (after 4 meta columns) */
+.table.c2c thead tr:first-child th:nth-child(5){ background:var(--wu); }
+.table.c2c thead tr:first-child th:nth-child(6){ background:var(--ria); }
+.table.c2c thead tr:first-child th:nth-child(7){ background:var(--mg); }
+.table.c2c thead tr:first-child th:nth-child(8){ background:var(--tot); }
+
+/* Second header row — cream sub-headers for each block */
+.table.c2c thead tr:nth-child(2) th:nth-child(5),
+.table.c2c thead tr:nth-child(2) th:nth-child(6),
+.table.c2c thead tr:nth-child(2) th:nth-child(7){ background:var(--wu-sub); }
+.table.c2c thead tr:nth-child(2) th:nth-child(8),
+.table.c2c thead tr:nth-child(2) th:nth-child(9),
+.table.c2c thead tr:nth-child(2) th:nth-child(10){ background:var(--ria-sub); }
+.table.c2c thead tr:nth-child(2) th:nth-child(11),
+.table.c2c thead tr:nth-child(2) th:nth-child(12),
+.table.c2c thead tr:nth-child(2) th:nth-child(13){ background:var(--mg-sub); }
+.table.c2c thead tr:nth-child(2) th:nth-child(14),
+.table.c2c thead tr:nth-child(2) th:nth-child(15),
+.table.c2c thead tr:nth-child(2) th:nth-child(16){ background:var(--tot-sub); }
+
+/* Brand block gutters (visual separators that don't break rowspans) */
+.table.c2c td:nth-child(7),  .table.c2c th:nth-child(7)  { box-shadow: inset -12px 0 0 #e9effa; } /* after WU  */
+.table.c2c td:nth-child(10), .table.c2c th:nth-child(10) { box-shadow: inset -12px 0 0 #ffe7d3; } /* after RIA */
+.table.c2c td:nth-child(13), .table.c2c th:nth-child(13) { box-shadow: inset -12px 0 0 #f7f9fc; } /* after MG  */
+
+/* Left meta columns get a soft paper feel so merged cells pop */
+.table.c2c td:nth-child(-n+4){ background:linear-gradient(180deg,#fafbfd,#fff); }
+.table.c2c td.territory{ color:var(--muted); font-weight:700; }
+
+/* Zone banner, subtotal and grand totals */
+.table.c2c .zone-row td{
+  background:linear-gradient(90deg,#f2f6ff,#ffffff);
+  font-weight:700; color:#334155; border-top-width:0;
+}
+.table.c2c .subtotal td{ background:var(--subtotal); font-weight:700; }
+.table.c2c .grand    td{ background:var(--grand);    font-weight:800; }
+
+/* Growth colour chips */
+.g-pos{ color:var(--pos);  font-weight:700; }
+.g-neg{ color:var(--neg);  font-weight:700; }
+.g-zero{ color:var(--zero); }
+
+/* Optional gap row between zones (used in template) */
+.zone-gap td{ height:14px; border:0!important; background:transparent!important; }
+
+/* -------- NAME/AVATAR column: stack name BELOW the avatar -------- */
+.table.c2c th.name,
+.table.c2c td.name{
+  width: 180px;          /* ensure roomy column */
+  min-width: 180px;      /* force width so content isn't clipped */
+  overflow: visible;
+  text-align: center;    /* header + cell centered */
+}
+
+.bdo-cell{
+  display:flex;
+  flex-direction:column; /* avatar on top, name underneath */
+  align-items:center;
+  gap:.35rem;
+  min-height:80px;       /* comfortable rowspan cell height */
+  padding:.25rem 0;
+}
+.bdo-avatar{
+  flex:0 0 36px;
+  width:36px;
+  height:36px;
+  border-radius:50%;
+  object-fit:cover;
+  border:1px solid var(--grid);
+  background:#f4f6fb;
+}
+.bdo-link{
+  display:block;
+  max-width:100%;
+  color:var(--ink);
+  text-decoration:none;
+  font-weight:600;
+  line-height:1.1;
+  white-space:normal;    /* allow wrapping under the avatar */
+  word-break:break-word; /* long single words will wrap */
+}
+.bdo-link:hover{ text-decoration:underline; }
+
+/* Slightly tighter on narrow screens */
+@media (max-width:1200px){
+  .table.c2c th,.table.c2c td{ padding:.42rem .5rem; }
+  .table.c2c thead th{ font-size:.74rem; }
+}
+
+/* ===== size + spacing overrides (put at the very end) ===== */
+.table.c2c{ font-size:.80rem; }          /* body cells */
+.table.c2c thead th{                     /* header cells */
+  font-size:.60rem;
+  padding:.38rem .48rem;
+}
+.table.c2c td{ padding:.40rem .48rem; }  /* tighter body padding */
+
+/* even tighter below 1200px */
+@media (max-width:1200px){
+  .table.c2c{ font-size:.74rem; }
+  .table.c2c thead th{ font-size:.56rem; padding:.32rem .42rem; }
+  .table.c2c td{ padding:.34rem .42rem; }
+}

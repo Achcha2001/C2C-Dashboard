@@ -1,0 +1,19 @@
+# python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+.venv/
+venv/
+
+# mac / editor junk
+.DS_Store
+.vscode/
+.idea/
+
+# uploads & generated stuff
+uploads/
+*.xlsx
+*.xls
+*.csv

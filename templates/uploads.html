@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block content %}
+<h5 class="mb-3 text-capitalize">Uploads — {{ 'Western Union' if brand=='wu' else ('RIA' if brand=='ria' else 'MoneyGram') }}</h5>
+
+<form method="POST" enctype="multipart/form-data" class="mb-3">
+  <div class="row g-2 align-items-end">
+    <div class="col-md-6 col-lg-4">
+      <label class="form-label small">Choose file (.xlsx, .xls, .csv)</label>
+      <input name="file" type="file" class="form-control form-control-sm" accept=".xlsx,.xls,.csv" required>
+    </div>
+    <div class="col-md-3">
+      <button class="btn btn-success btn-sm"><i class="bi bi-cloud-arrow-up"></i> Upload</button>
+    </div>
+  </div>
+</form>
+
+<div class="card shadow-sm">
+  <div class="card-header bg-white">Files</div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>File name</th>
+            <th>Size</th>
+            <th>Uploaded</th>
+            <th style="width:120px"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for f in files %}
+            <tr>
+              <td class="text-break">{{ f.name }}</td>
+              <td>{{ (f.size/1024)|round(1) }} KB</td>
+              <td>{{ f.mtime.strftime("%Y-%m-%d %H:%M:%S") }}</td>
+              <td>
+                <form method="post" action="{{ url_for('delete_upload', brand=brand, filename=f.name) }}" onsubmit="return confirm('Delete this file?')">
+                  <button class="btn btn-outline-danger btn-sm"><i class="bi bi-trash"></i> Delete</button>
+                </form>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="4" class="text-center text-muted py-4">No files yet. Upload above.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
