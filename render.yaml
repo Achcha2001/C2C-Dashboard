@@ -1,10 +1,10 @@
 services:
   - type: web
-    name: mmbl-analytics
+    name: mmbl-c2c-dashboard
+    plan: free
     env: python
-    buildCommand: pip install --no-cache-dir -r requirements.txt
-    startCommand: gunicorn -k gthread -w 2 -t 120 -b 0.0.0.0:$PORT app:app
-    autoDeploy: true
+    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
+    startCommand: gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT app:app
     envVars:
-      - key: PYTHONUNBUFFERED
-        value: "1"
+      - key: PYTHON_VERSION
+        value: 3.11.9
