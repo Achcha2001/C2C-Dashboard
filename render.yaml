@@ -1,10 +1,8 @@
 services:
   - type: web
-    name: mmbl-c2c-dashboard
-    plan: free
     env: python
-    buildCommand: pip install --upgrade pip && pip install -r requirements.txt
-    startCommand: gunicorn -w 2 -k gthread -b 0.0.0.0:$PORT app:app
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
+    pythonVersion: 3.13.4
+    buildCommand: |
+      pip install --upgrade pip
+      pip install --only-binary=:all: -r requirements.txt
+    startCommand: gunicorn app:app
